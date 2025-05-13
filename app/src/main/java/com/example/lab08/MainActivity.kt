@@ -13,7 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -58,7 +62,7 @@ fun TaskScreen(viewModel: TaskViewModel) {
     val tasks by viewModel.tasks.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var newTaskDescription by remember { mutableStateOf("") }
-
+    var IsEditingTask by remember { mutableStateOf<Task?>(null) }
 
     Column(
         modifier = Modifier
@@ -72,7 +76,6 @@ fun TaskScreen(viewModel: TaskViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
 
-
         Button(
             onClick = {
                 if (newTaskDescription.isNotEmpty()) {
@@ -85,22 +88,45 @@ fun TaskScreen(viewModel: TaskViewModel) {
             Text("Agregar tarea")
         }
 
-
         Spacer(modifier = Modifier.height(16.dp))
 
-
         tasks.forEach { task ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = task.description)
-                Button(onClick = { viewModel.toggleTaskCompletion(task) }) {
-                    Text(if (task.isCompleted) "Completada" else "Pendiente")
+            if (IsEditingTask?.id == task.id) {
+                var editedDescription by remember { mutableStateOf(task.description) }
+                TextField(
+                    value = editedDescription,
+                    onValueChange = { editedDescription = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(
+                    onClick = {
+                        val updatedTask = task.copy(description = editedDescription)
+                        viewModel.updateTask(updatedTask)
+                        IsEditingTask = null
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = task.description)
+                    Button(onClick = { viewModel.toggleTaskCompletion(task) }) {
+                        Text(if (task.isCompleted) "Completada" else "Pendiente")
+                    }
+                    Button(onClick = { IsEditingTask = task }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar")
+                    }
+                    Button(onClick = { viewModel.deleteTask(task) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                    }
                 }
             }
-        }
 
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         Button(
             onClick = { coroutineScope.launch { viewModel.deleteAllTasks() } },
